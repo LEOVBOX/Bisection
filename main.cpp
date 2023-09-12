@@ -5,6 +5,7 @@
 class Polynomial
 {
 	// p_0 * x^n + p_1 * x^(n-1) + ... p_(n-1)*x + p_n
+	// p_0 > 0
 public:
 	long double* coefficients_list;
 	int degree;
@@ -107,9 +108,9 @@ long double findXR(Polynomial* f, long double x_L)
 	return x_R;
 }
 
-// x_L < x_R
 long double bisection(Polynomial* f, long double x_L, long double x_R, long double epsilon)
 {
+	// x_L < x_R
 	// Ищем левую границу отрезка для бисекции
 	if (x_L == INFINITY)
 	{
@@ -190,8 +191,8 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		{
 			roots = new long double[3];
 			roots[0] = 2;
-			roots[1] = (-b + sqrt(D))/(2*a);
-			roots[2] = (-b - sqrt(D))/(2*a);
+			roots[1] = (-b - sqrt(D))/(2*a);
+			roots[2] = (-b + sqrt(D))/(2*a);
 			return roots;
 		}
 		else
@@ -201,17 +202,16 @@ long double* findRoots(Polynomial* f, long double epsilon)
 	}
 
 	// Полином третьей степени
-	else if (f->degree == 3)
+	else
 	{
 		Polynomial* derivative = f->calcDerivative();
 		long double c = f->coefficients_list[3];
 
-		// Определяем количество корней
-
-		long double D = calcD(derivative->coefficients_list[0], derivative->coefficients_list[1],
+		long double D_df = calcD(derivative->coefficients_list[0], derivative->coefficients_list[1],
 				derivative->coefficients_list[2]);
+
 		// Один корень. f'(x) = 0 или f'(x) > 0
-		if ((D < -epsilon) || (abs(D) <= epsilon))
+		if ((D_df < -epsilon) || (abs(D_df) <= epsilon))
 		{
 			roots = new long double[2];
 			roots[0] = 1;
@@ -220,6 +220,7 @@ long double* findRoots(Polynomial* f, long double epsilon)
 				roots[1] = 0;
 				return roots;
 			}
+
 			else
 			{
 				if (c > 0)
@@ -236,13 +237,92 @@ long double* findRoots(Polynomial* f, long double epsilon)
 
 		}
 
-		// Два корня.
 		else
 		{
+			long double *df_roots = new long double [3];
+			df_roots = findRoots(derivative, epsilon);
+			long double a = df_roots[1];
+			long double b = df_roots[2];
 
+
+			long double f_a = f->calcF(a);
+			long double f_b = f->calcF(b);
+
+			// Один корень на [b; inf)
+			if ((f_a < -epsilon) && (f_b < -epsilon))
+			{
+				roots = new long double[2];
+				roots[0] = 1;
+				roots[1] = bisection(f, b, INFINITY, epsilon);
+				return roots;
+			}
+
+			// Один корень на (-inf; a]
+			else if ((f_a > epsilon) && (f_b > epsilon))
+			{
+				roots = new long double[2];
+				roots[0] = 1;
+				roots[1] = bisection(f, INFINITY, a, epsilon);
+				return roots;
+			}
+
+			// Три корня
+			else if ((f_a > epsilon) && (f_b < -epsilon))
+			{
+				roots = new long double [4];
+				roots[0] = 3;
+				roots[1] = bisection(f, INFINITY, a, epsilon);
+				roots[2] = bisection(f, a, b, epsilon);
+				roots[3] = bisection(f, b, INFINITY, epsilon);
+				return roots;
+			}
+
+			// Два корня
+			else if ((abs(f_b) < epsilon) && (f_a > epsilon))
+			{
+				roots = new long double [3];
+				roots[0] = 2;
+				roots[1] = b;
+				roots[2] = bisection(f, INFINITY, a, epsilon);
+				return roots;
+			}
+
+			// Два корня
+			else if ((abs(f_a) < epsilon) && (f_b < epsilon))
+			{
+				roots = new long double [3];
+				roots[0] = 2;
+				roots[1] = a;
+				roots[2] = bisection(f, b, INFINITY, epsilon);
+				return roots;
+			}
+
+			// Один корень
+			else
+			{
+				roots = new long double [2];
+				roots[0] = 1;
+				roots[1] = bisection(f, a, b, epsilon);
+			}
 		}
 	}
 	return roots;
+}
+
+void normaliseInput(long double* coefficients_list, int degree)
+{
+	if (coefficients_list[0] == 0)
+	{
+		std::cout << "Коэфициент высшей степени равен нулю" << std::endl;
+		exit(-1);
+	}
+	if (coefficients_list[0] < 0)
+	{
+		long double d = coefficients_list[0];
+		for (int i = 0; i <= degree; i++) {
+			coefficients_list[i] = coefficients_list[i] / d;
+		}
+	}
 }
 
 void printRoots(long double *arr)
@@ -267,8 +347,9 @@ int main()
 	{
 		std::cin >> coeficients[i];
 	}
-
+	normaliseInput(coeficients, n);
 	Polynomial* f = new Polynomial(n, coeficients);
+	f->printCoefs();
 	std::cout << std::endl;
 	//long double root_x = bisection(f, -10, 10, 0.05);
 	long double *root_x = findRoots(f, 0.1);
