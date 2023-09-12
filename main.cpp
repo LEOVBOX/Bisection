@@ -79,7 +79,7 @@ long double findXL(Polynomial* f, long double x_R)
 {
 	long double delta = 1;
 	long double x_L = x_R - delta;
-	long double f_x = f->calcF(x_R - delta);
+	long double f_x = f->calcF(x_L);
 	Polynomial* df = f->calcDerivative();
 	long double df_x = df->calcF(x_R - delta);
 	while ((f_x > 0  && df_x > 0) || (f_x < 0 && df_x < 0))
@@ -89,6 +89,22 @@ long double findXL(Polynomial* f, long double x_R)
 		df_x = df->calcF(x_L);
 	}
 	return x_L;
+}
+
+long double findXR(Polynomial* f, long double x_L)
+{
+	long double delta = 1;
+	long double x_R = x_L + delta;
+	long double f_x = f->calcF(x_R);
+	Polynomial* df = f->calcDerivative();
+	long double df_x = df->calcF(x_R - delta);
+	while ((f_x > 0 && df_x < 0) || (f_x < 0 && df_x > 0))
+	{
+		x_R += delta;
+		f_x = f->calcF(x_R);
+		df_x = df->calcF(x_R);
+	}
+	return x_R;
 }
 
 // x_L < x_R
@@ -103,12 +119,7 @@ long double bisection(Polynomial* f, long double x_L, long double x_R, long doub
 	// Ищем правую границу для бисекции
 	else if (x_R == INFINITY)
 	{
-		long double delta = 10;
-		while (abs(f->calcF(x_L + delta)) >= epsilon)
-		{
-			delta *= 2;
-			x_R = delta;
-		}
+		x_R = findXR(f, x_L);
 	}
 
 	long double x_average = calcAverageX(x_L, x_R);
@@ -143,46 +154,49 @@ long double* findRoots(Polynomial* f, long double epsilon)
 	// Полином первой степени
 	if (f->degree == 1)
 	{
-		roots = new long double;
-		if (f->coefficients_list[0] == 0)
+		roots = new long double[2];
+		long double k = f->coefficients_list[0];
+		long double b = f->coefficients_list[1];
+		if (k == 0)
 		{
 			return nullptr;
 		}
-		else if (((f->calcF(0) < -epsilon) && (f->coefficients_list[0] < 0)) ||
-				 ((f->calcF(0) > epsilon) && (f->coefficients_list[0] > 0)))
-		{
-			roots[0] = bisection(f, INFINITY, 0.0, epsilon);
-			return roots;
-		}
 		else
 		{
-			roots[0] = bisection(f, 0.0, INFINITY, epsilon);
-			return roots;
+			roots[0] = 1;
+			roots[1] = -(b/k);
 		}
 	}
 
 	// Полином второй степени
 	else if (f->degree == 2)
 	{
-		long double D = calcD(f->coefficients_list[0], f->coefficients_list[1], f->coefficients_list[2]);
+		long double a = f->coefficients_list[0];
+		long double b = f->coefficients_list[1];
+		long double c = f->coefficients_list[2];
+
+		long double D = calcD(a, b, c);
 
 		// Определяем количество корней
 
 		// Один корень
 		if (D == 0)
 		{
-			roots = new long double;
-			Polynomial *d_f = f->calcDerivative();
-			roots[0] = *findRoots(d_f, epsilon);
-			return roots;
+			roots = new long double[2];
+			roots[0] = 1;
+			roots[1] = -(b/(2*a));
 		}
 		else if (D > 0)
 		{
-
+			roots = new long double[3];
+			roots[0] = 2;
+			roots[1] = (-b + sqrt(D))/(2*a);
+			roots[2] = (-b - sqrt(D))/(2*a);
+			return roots;
 		}
 		else
 		{
-
+			return nullptr;
 		}
 	}
 
@@ -190,7 +204,7 @@ long double* findRoots(Polynomial* f, long double epsilon)
 	else if (f->degree == 3)
 	{
 		Polynomial* derivative = f->calcDerivative();
-		long double c = derivative->coefficients_list[2];
+		long double c = f->coefficients_list[3];
 
 		// Определяем количество корней
 
@@ -199,34 +213,47 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		// Один корень. f'(x) = 0 или f'(x) > 0
 		if ((D < -epsilon) || (abs(D) <= epsilon))
 		{
-			roots = new long double;
+			roots = new long double[2];
+			roots[0] = 1;
 			if (abs(c) < epsilon)
 			{
-				*roots = 0;
+				roots[1] = 0;
 				return roots;
 			}
 			else
 			{
-				if (c > epsilon)
+				if (c > 0)
 				{
-					*roots = bisection(derivative, c, INFINITY, epsilon);
+					roots[1] = bisection(f, INFINITY, 0, epsilon);
 					return roots;
 				}
 				else
 				{
-					*roots = bisection(derivative, INFINITY, c, epsilon);
+					roots[1] = bisection(f, 0, INFINITY, epsilon);
 					return roots;
 				}
 			}
+
 		}
 
-			// Два корня.
+		// Два корня.
 		else
 		{
 
 		}
 	}
+	return roots;
+}
 
+void printRoots(long double *arr)
+{
+	long double n = arr[0];
+	std::cout << "Количество корней = " << n << std::endl << "Корни:" << std::endl;
+	for (int i = 1; i <= n; i++)
+	{
+		std::cout << arr[i] << " ";
+	}
+	std::cout << std::endl;
 }
 
 int main()
@@ -244,10 +271,8 @@ int main()
 	Polynomial* f = new Polynomial(n, coeficients);
 	std::cout << std::endl;
 	//long double root_x = bisection(f, -10, 10, 0.05);
-	long double root_x = *findRoots(f, 0.1);
-	std::cout << "root = " << root_x << std::endl;
-	Polynomial* derivative = f->calcDerivative();
-	derivative->printCoefs();
+	long double *root_x = findRoots(f, 0.1);
+	printRoots(root_x);
 	delete[] coeficients;
 	return 0;
 }
