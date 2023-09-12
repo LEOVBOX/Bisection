@@ -81,13 +81,10 @@ long double findXL(Polynomial* f, long double x_R)
 	long double delta = 1;
 	long double x_L = x_R - delta;
 	long double f_x = f->calcF(x_L);
-	Polynomial* df = f->calcDerivative();
-	long double df_x = df->calcF(x_R - delta);
-	while ((f_x > 0  && df_x > 0) || (f_x < 0 && df_x < 0))
+	while (f_x > 0)
 	{
 		x_L -= delta;
 		f_x = f->calcF(x_L);
-		df_x = df->calcF(x_L);
 	}
 	return x_L;
 }
@@ -97,13 +94,10 @@ long double findXR(Polynomial* f, long double x_L)
 	long double delta = 1;
 	long double x_R = x_L + delta;
 	long double f_x = f->calcF(x_R);
-	Polynomial* df = f->calcDerivative();
-	long double df_x = df->calcF(x_R - delta);
-	while ((f_x > 0 && df_x < 0) || (f_x < 0 && df_x > 0))
+	while (f_x < 0)
 	{
 		x_R += delta;
 		f_x = f->calcF(x_R);
-		df_x = df->calcF(x_R);
 	}
 	return x_R;
 }
