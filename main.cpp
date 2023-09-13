@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <math.h>
 
+const
+
 class Polynomial
 {
 	// p_0 * x^n + p_1 * x^(n-1) + ... p_(n-1)*x + p_n
@@ -119,10 +121,12 @@ long double bisection(Polynomial* f, long double x_L, long double x_R, long doub
 
 	long double x_average = calcAverageX(x_L, x_R);
 	long double f_x = f->calcF(x_average);
+	Polynomial *df = f->calcDerivative();
+	long double df_x = df->calcF(x_average);
 	while (abs(f_x) >= epsilon)
 	{
 		// Ищем решение на [x_average; x_R]
-		if (f_x < -epsilon)
+		if ((f_x < -epsilon && df_x > 0) || (f_x > epsilon && df_x < 0))
 		{
 			x_L = x_average;
 			x_average = calcAverageX(x_average, x_R);
@@ -134,6 +138,7 @@ long double bisection(Polynomial* f, long double x_L, long double x_R, long doub
 			x_average = calcAverageX(x_L, x_average);
 		}
 		f_x = f->calcF(x_average);
+		df_x = df->calcF(x_average);
 	}
 	return x_average;
 }
@@ -242,8 +247,16 @@ long double* findRoots(Polynomial* f, long double epsilon)
 			long double f_a = f->calcF(a);
 			long double f_b = f->calcF(b);
 
+			// Один корень
+			if (abs(f_a) < epsilon && abs(f_b) < epsilon)
+			{
+				roots = new long double [2];
+				roots[0] = 1;
+				roots[1] = bisection(f, a, b, epsilon);
+			}
+
 			// Один корень на [b; inf)
-			if ((f_a < -epsilon) && (f_b < -epsilon))
+			else if ((f_a < -epsilon) && (f_b < -epsilon))
 			{
 				roots = new long double[2];
 				roots[0] = 1;
@@ -294,9 +307,7 @@ long double* findRoots(Polynomial* f, long double epsilon)
 			// Один корень
 			else
 			{
-				roots = new long double [2];
-				roots[0] = 1;
-				roots[1] = bisection(f, a, b, epsilon);
+				return nullptr;
 			}
 		}
 	}
@@ -329,6 +340,8 @@ void printRoots(long double *arr)
 	}
 	std::cout << std::endl;
 }
+
+
 
 int main()
 {
