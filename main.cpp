@@ -336,31 +336,40 @@ void printRoots(long double *arr)
 	std::cout << "Количество корней = " << n << std::endl << "Корни:" << std::endl;
 	for (int i = 1; i <= n; i++)
 	{
-		std::cout << arr[i] << " ";
+		std::cout << "x_" << i << " = " <<  arr[i] << std::endl;
 	}
 	std::cout << std::endl;
 }
 
+long double* getCoefficients()
+{
+	long double* coefficients_list = new long double[4];
+	std::cout << "f(x) = x^3 + ax^2 + bx^3 + c" << std::endl;
+	coefficients_list[0] = 1;
+	std::cout << "a = ";
+	std::cin >> coefficients_list[1];
+	std::cout << "b = ";
+	std::cin >> coefficients_list[2];
+	std::cout << "c = ";
+	std::cin >> coefficients_list[3];
+	std::cout << "Решение уравнениия f(x) = 0" << std::endl;
+	return coefficients_list;
+}
 
 
 int main()
 {
-	int n = 0;
-	std::cout << "Введите степень полинома" << std::endl;
-	std::cin >> n;
-	auto* coeficients = new long double[n + 1];
-	std::cout << "Введите коэффициенты многочлена, начиная с коэффициента при наибольшей степени" << std::endl;
-	for (int i = 0; i <= n; i++)
-	{
-		std::cin >> coeficients[i];
-	}
+	int n = 3;
+	long double epsilon;
+	std::cout << "epsilon = ";
+	std::cin >> epsilon;
+
+	auto *coeficients = getCoefficients();
 	normaliseInput(coeficients, n);
 	Polynomial* f = new Polynomial(n, coeficients);
-	f->printCoefs();
 	std::cout << std::endl;
-	//long double root_x = bisection(f, -10, 10, 0.05);
+
 	long double *root_x = findRoots(f, 0.1);
 	printRoots(root_x);
-	delete[] coeficients;
 	return 0;
 }
