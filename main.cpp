@@ -200,6 +200,8 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		}
 	}
 
+
+
 	// Полином третьей степени
 	else
 	{
@@ -213,11 +215,29 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		if ((D_df < -epsilon) || (abs(D_df) <= epsilon))
 		{
 			roots = new long double[2];
-			roots[0] = 1;
 			if (abs(c) < epsilon)
 			{
 				roots[1] = 0;
 				return roots;
+			}
+
+			roots[0] = 1;
+
+			long double a = f->coefficients_list[1];
+			long double b = f->coefficients_list[2];
+
+			// x^3 + 3*z*x^2 + 3*x*z^2 + z^3 = (x + z)^3
+			long double z = cbrt(c);
+			if (abs(a)/3 == abs(z) && sqrt(abs(b)/3) == abs(z))
+			{
+				std::cout << "Кратность корня = 3" << std::endl;
+				roots[1] = -z;
+				return roots;
+			}
+
+			if ()
+			{
+
 			}
 
 			else
@@ -284,6 +304,8 @@ long double* findRoots(Polynomial* f, long double epsilon)
 				return roots;
 			}
 
+			// x^3 + 3*z*x^2 + 3*x*z^2 + z^3 = (x + z)^3
+
 			// Два корня
 			else if ((abs(f_b) < epsilon) && (f_a > epsilon))
 			{
@@ -293,6 +315,8 @@ long double* findRoots(Polynomial* f, long double epsilon)
 				roots[2] = bisection(f, INFINITY, a, epsilon);
 				return roots;
 			}
+
+			// x^3 + 3*z*x^2 + 3*x*z^2 + z^3 = (x + z)^3
 
 			// Два корня
 			else if ((abs(f_a) < epsilon) && (f_b < epsilon))
@@ -365,7 +389,7 @@ int main()
 	std::cin >> epsilon;
 
 	auto *coeficients = getCoefficients();
-	normaliseInput(coeficients, n);
+	//normaliseInput(coeficients, n);
 	Polynomial* f = new Polynomial(n, coeficients);
 	std::cout << std::endl;
 
