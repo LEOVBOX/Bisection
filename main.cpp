@@ -1,8 +1,31 @@
 #include <iostream>
 #include <stdarg.h>
 #include <math.h>
+#include <vector>
 
-const
+class Root
+{
+public:
+	long double x;
+	int multiplicity;
+	Root(long double x, int multiplicity)
+	{
+		this->x = x;
+		this->multiplicity = multiplicity;
+	}
+
+	Root(long double x)
+	{
+		this->x = x;
+		this->multiplicity = 1;
+	}
+
+	Root()
+	{
+		this->x = 0;
+		this->multiplicity = 0;
+	}
+};
 
 class Polynomial
 {
@@ -11,21 +34,6 @@ class Polynomial
 public:
 	long double* coefficients_list;
 	int degree;
-
-	Polynomial(int n, ...)
-	{
-		degree = n;
-		coefficients_list = new long double[n + 1];
-		// указатель на начало обрабатываемых аргументов
-		va_list coefficients;
-		// начало обработки аргументов
-		va_start(coefficients, n);
-		for (int i = 0; i <= n; i++)
-		{
-			coefficients_list[i] = va_arg(coefficients, long double);
-		}
-		va_end(coefficients);
-	}
 
 	explicit Polynomial(int n, long double* coeficients)
 	{
@@ -148,23 +156,25 @@ long double calcD(long double a, long double b, long double c)
 	return pow(b, 2) - 4 * a * c;
 }
 
-long double* findRoots(Polynomial* f, long double epsilon)
+std::vector<Root*> findRoots(Polynomial* f, long double epsilon)
 {
-	long double* roots;
+	std::vector<Root*> solution;
+
 	// Полином первой степени
 	if (f->degree == 1)
 	{
-		roots = new long double[2];
 		long double k = f->coefficients_list[0];
 		long double b = f->coefficients_list[1];
 		if (k == 0)
 		{
-			return nullptr;
+			std::cout << "на вход подана константа";
+			exit(-1);
 		}
 		else
 		{
-			roots[0] = 1;
-			roots[1] = -(b/k);
+			Root *root = new Root(-(b/k));
+			solution.push_back(root);
+			return solution;
 		}
 	}
 
@@ -182,25 +192,25 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		// Один корень
 		if (D == 0)
 		{
-			roots = new long double[2];
-			roots[0] = 1;
-			roots[1] = -(b/(2*a));
+			Root *root = new Root(-(b/(2*a)), 2);
+			solution.push_back(root);
+			return solution;
 		}
 		else if (D > 0)
 		{
-			roots = new long double[3];
-			roots[0] = 2;
-			roots[1] = (-b - sqrt(D))/(2*a);
-			roots[2] = (-b + sqrt(D))/(2*a);
-			return roots;
+
+			Root* x_1 = new Root((-b - sqrt(D))/(2*a));
+			solution.push_back(x_1);
+			Root* x_2  = new Root((-b + sqrt(D))/(2*a));
+			solution.push_back(x_2);
+			return solution;
 		}
 		else
 		{
-			return nullptr;
+			std::cout << "уравнение не имеет действительных корней";
+			exit(-1);
 		}
 	}
-
-
 
 	// Полином третьей степени
 	else
@@ -214,14 +224,12 @@ long double* findRoots(Polynomial* f, long double epsilon)
 		// Один корень. f'(x) = 0 или f'(x) > 0
 		if ((D_df < -epsilon) || (abs(D_df) <= epsilon))
 		{
-			roots = new long double[2];
 			if (abs(c) < epsilon)
 			{
-				roots[1] = 0;
-				return roots;
+				Root *root = new Root(0);
+				solution.push_back(root);
+				return solution;
 			}
-
-			roots[0] = 1;
 
 			long double a = f->coefficients_list[1];
 			long double b = f->coefficients_list[2];
@@ -230,27 +238,24 @@ long double* findRoots(Polynomial* f, long double epsilon)
 			long double z = cbrt(c);
 			if (abs(a)/3 == abs(z) && sqrt(abs(b)/3) == abs(z))
 			{
-				std::cout << "Кратность корня = 3" << std::endl;
-				roots[1] = -z;
-				return roots;
-			}
-
-			if ()
-			{
-
+				Root* root  = new Root(-z, 3);
+				solution.push_back(root);
+				return solution;
 			}
 
 			else
 			{
 				if (c > 0)
 				{
-					roots[1] = bisection(f, INFINITY, 0, epsilon);
-					return roots;
+					Root* root  = new Root(bisection(f, INFINITY, 0, epsilon));
+					solution.push_back(root);
+					return solution;
 				}
 				else
 				{
-					roots[1] = bisection(f, 0, INFINITY, epsilon);
-					return roots;
+					Root* root = new Root(bisection(f, 0, INFINITY, epsilon));
+					solution.push_back(root);
+					return solution;
 				}
 			}
 
@@ -258,50 +263,41 @@ long double* findRoots(Polynomial* f, long double epsilon)
 
 		else
 		{
-			long double *df_roots = new long double [3];
-			df_roots = findRoots(derivative, epsilon);
-			long double a = df_roots[1];
-			long double b = df_roots[2];
+			std::vector<Root*> df_solution;
+			df_solution = findRoots(derivative, epsilon);
+			long double a = df_solution[0]->x;
+			long double b = df_solution[1]->x;
 
 
 			long double f_a = f->calcF(a);
 			long double f_b = f->calcF(b);
 
-			// Один корень
-			if (abs(f_a) < epsilon && abs(f_b) < epsilon)
-			{
-				roots = new long double [2];
-				roots[0] = 1;
-				roots[1] = bisection(f, a, b, epsilon);
-			}
-
 			// Один корень на [b; inf)
-			else if ((f_a < -epsilon) && (f_b < -epsilon))
+			if ((f_a < -epsilon) && (f_b < -epsilon))
 			{
-				roots = new long double[2];
-				roots[0] = 1;
-				roots[1] = bisection(f, b, INFINITY, epsilon);
-				return roots;
+				Root* root = new Root(bisection(f, b, INFINITY, epsilon));
+				solution.push_back(root);
+				return solution;
 			}
 
 			// Один корень на (-inf; a]
 			else if ((f_a > epsilon) && (f_b > epsilon))
 			{
-				roots = new long double[2];
-				roots[0] = 1;
-				roots[1] = bisection(f, INFINITY, a, epsilon);
-				return roots;
+				Root *root = new Root(bisection(f, INFINITY, a, epsilon));
+				solution.push_back(root);
+				return solution;
 			}
 
 			// Три корня
 			else if ((f_a > epsilon) && (f_b < -epsilon))
 			{
-				roots = new long double [4];
-				roots[0] = 3;
-				roots[1] = bisection(f, INFINITY, a, epsilon);
-				roots[2] = bisection(f, a, b, epsilon);
-				roots[3] = bisection(f, b, INFINITY, epsilon);
-				return roots;
+				Root* root_1 = new Root(bisection(f, INFINITY, a, epsilon));
+				Root* root_2 = new Root(bisection(f, a, b, epsilon));
+				Root* root_3 = new Root(bisection(f, b, INFINITY, epsilon));
+				solution.push_back(root_1);
+				solution.push_back(root_2);
+				solution.push_back(root_3);
+				return solution;
 			}
 
 			// x^3 + 3*z*x^2 + 3*x*z^2 + z^3 = (x + z)^3
@@ -309,11 +305,11 @@ long double* findRoots(Polynomial* f, long double epsilon)
 			// Два корня
 			else if ((abs(f_b) < epsilon) && (f_a > epsilon))
 			{
-				roots = new long double [3];
-				roots[0] = 2;
-				roots[1] = b;
-				roots[2] = bisection(f, INFINITY, a, epsilon);
-				return roots;
+				Root *root_1 = new Root(b, 2);
+				solution.push_back(root_1);
+				Root *root_2 = new Root(bisection(f, INFINITY, a, epsilon));
+				solution.push_back(root_2);
+				return solution;
 			}
 
 			// x^3 + 3*z*x^2 + 3*x*z^2 + z^3 = (x + z)^3
@@ -321,21 +317,24 @@ long double* findRoots(Polynomial* f, long double epsilon)
 			// Два корня
 			else if ((abs(f_a) < epsilon) && (f_b < epsilon))
 			{
-				roots = new long double [3];
-				roots[0] = 2;
-				roots[1] = a;
-				roots[2] = bisection(f, b, INFINITY, epsilon);
-				return roots;
+				Root *root_1 = new Root(a, 2);
+				solution.push_back(root_1);
+				Root *root_2 = new Root(bisection(f, b, INFINITY, epsilon));
+				solution.push_back(root_2);
+				return solution;
 			}
 
 			// Один корень
-			else
+			else if (abs(f_a) < epsilon && abs(f_b) < epsilon)
 			{
-				return nullptr;
+				Root *root = new Root(bisection(f, a, b, epsilon), 3);
+				solution.push_back(root);
+				return solution;
 			}
 		}
 	}
-	return roots;
+
+	return solution;
 }
 
 void normaliseInput(long double* coefficients_list, int degree)
@@ -354,13 +353,13 @@ void normaliseInput(long double* coefficients_list, int degree)
 	}
 }
 
-void printRoots(long double *arr)
+void printRoots(std::vector<Root*> &roots)
 {
-	long double n = arr[0];
+	size_t n = roots.size();
 	std::cout << "Количество корней = " << n << std::endl << "Корни:" << std::endl;
-	for (int i = 1; i <= n; i++)
+	for (int i = 0; i < n; i++)
 	{
-		std::cout << "x_" << i << " = " <<  arr[i] << std::endl;
+		std::cout << "x_" << i << " = " << roots[i]->x << " Кратность = " << roots[i]->multiplicity << std::endl;
 	}
 	std::cout << std::endl;
 }
@@ -368,7 +367,7 @@ void printRoots(long double *arr)
 long double* getCoefficients()
 {
 	long double* coefficients_list = new long double[4];
-	std::cout << "f(x) = x^3 + ax^2 + bx^3 + c" << std::endl;
+	std::cout << "f(x) = x^3 + ax^2 + bx + c" << std::endl;
 	coefficients_list[0] = 1;
 	std::cout << "a = ";
 	std::cin >> coefficients_list[1];
@@ -393,7 +392,8 @@ int main()
 	Polynomial* f = new Polynomial(n, coeficients);
 	std::cout << std::endl;
 
-	long double *root_x = findRoots(f, 0.1);
-	printRoots(root_x);
+	std::vector<Root*> solution = findRoots(f, epsilon);
+	printRoots(solution);
+
 	return 0;
 }
